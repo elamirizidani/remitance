@@ -6,7 +6,7 @@ import TrustFooter from '@/components/TrustFooter';
 import { TransferProvider } from '@/context/TransferContext';
 
 export const metadata = { 
-  title: 'Remitly Pro Max | Secure Global Money Transfer',
+  title: 'Fasta fasta | Secure Global Money Transfer',
   description: 'Send money internationally with clear fees, competitive rates, fast delivery, and banking-grade security.',
 };
 

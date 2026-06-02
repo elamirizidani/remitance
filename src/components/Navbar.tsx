@@ -22,7 +22,7 @@ export default function Navbar() {
             <i className="bi bi-intersect"></i>
           </span>
           <span className="fw-bold fs-5">
-            Remitly<span className="text-brand">Pro</span>
+            Fasta <span className="text-brand">fasta</span>
           </span>
         </Link>
 

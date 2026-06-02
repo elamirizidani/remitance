@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { FormEvent, useState } from 'react';
 
 const rows = [
-  { name: 'Remitly Pro', rate: '1,634.50', fee: '£0.00', best: true },
+  { name: 'Fasta fasta', rate: '1,634.50', fee: '£0.00', best: true },
   { name: 'Digital wallet average', rate: '1,620.50', fee: '£1.99' },
   { name: 'Bank wire', rate: '1,612.20', fee: '£2.90' },
 ];

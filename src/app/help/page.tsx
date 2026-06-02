@@ -71,7 +71,7 @@ export default function Help() {
                 </div>
                 <div className="d-flex justify-content-between gap-3">
                   <span className="text-subtle">Email</span>
-                  <span className="fw-bold text-white text-end">support@remitlypro.com</span>
+                  <span className="fw-bold text-white text-end">support@fastafasta.com</span>
                 </div>
                 <div className="d-flex justify-content-between gap-3">
                   <span className="text-subtle">Phone</span>

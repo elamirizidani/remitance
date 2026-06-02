@@ -6,7 +6,7 @@ export default function TrustFooter() {
       <div className="container py-4">
         <div className="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
           <div>
-            <span className="fw-bold text-white">Remitly<span className="text-brand">Pro</span></span>
+            <span className="fw-bold text-white">Fasta <span className="text-brand">Fasta</span></span>
             <p className="small text-subtle mb-0 mt-1">Secure money transfer demo · 2026</p>
           </div>
           <div className="d-flex gap-3 small">
