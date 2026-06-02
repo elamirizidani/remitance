@@ -1,23 +1,23 @@
 @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap');
 
 :root {
-  --bg-main: #030712;
-  --bg-panel: #08111f;
-  --bg-panel-strong: #0e1a2d;
-  --bg-elevated: #111c2f;
+  --bg-main: #050914;
+  --bg-panel: #0a1220;
+  --bg-panel-strong: #0f1726;
+  --bg-elevated: #162033;
   --bg-soft: rgba(255, 255, 255, 0.045);
   --border: rgba(226, 232, 240, 0.12);
   --border-strong: rgba(226, 232, 240, 0.2);
   --text-main: #f8fafc;
   --text-muted: #cbd5e1;
   --text-subtle: #94a3b8;
-  --brand: #8b5cf6;
-  --brand-strong: #7c3aed;
+  --brand: #3b82f6;
+  --brand-strong: #2563eb;
   --gold: #f59e0b;
   --mint: #10b981;
   --cyan: #38bdf8;
   --danger: #ef4444;
-  --shadow-panel: 0 20px 50px rgba(0, 0, 0, 0.32);
+  --shadow-panel: 0 14px 32px rgba(0, 0, 0, 0.22);
   --radius: 8px;
   --radius-sm: 6px;
   --content-max: 1180px;
@@ -559,6 +559,26 @@ p {
   background: rgba(255, 255, 255, 0.06);
 }
 
+.mobile-nav {
+  position: relative;
+}
+
+.mobile-nav summary {
+  list-style: none;
+}
+
+.mobile-nav summary::-webkit-details-marker {
+  display: none;
+}
+
+.mobile-nav-panel {
+  position: absolute;
+  top: calc(100% + 12px);
+  right: 0;
+  z-index: 20;
+  width: min(86vw, 320px);
+}
+
 .footer-link {
   color: var(--text-muted);
   text-decoration: none;
@@ -600,6 +620,80 @@ p {
   background: #243247;
   border-radius: 10px;
   border: 2px solid var(--bg-main);
+}
+
+.minimal-app {
+  color: inherit;
+}
+
+body {
+  background:
+    linear-gradient(180deg, #08111f 0%, var(--bg-main) 360px),
+    var(--bg-main);
+}
+
+.page-section {
+  padding: 36px 0;
+}
+
+.page-heading {
+  margin-bottom: 22px;
+}
+
+.eyebrow {
+  color: var(--cyan);
+  font-size: 0.74rem;
+}
+
+.surface-panel,
+.card-premium {
+  background: rgba(15, 23, 38, 0.92);
+  box-shadow: var(--shadow-panel);
+}
+
+.surface-panel-soft {
+  background: rgba(10, 18, 32, 0.72);
+}
+
+.quote-tool {
+  background: rgba(15, 23, 38, 0.92);
+  border-color: var(--border);
+}
+
+.quote-field,
+.metric-tile,
+.step-item,
+.rail-row {
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.icon-box {
+  width: 36px;
+  height: 36px;
+}
+
+.brand-mark {
+  background: rgba(59, 130, 246, 0.12);
+  border-color: rgba(59, 130, 246, 0.22);
+  color: #93c5fd;
+}
+
+.btn-premium-primary {
+  box-shadow: none;
+}
+
+.btn-premium,
+.input-premium,
+.form-control.input-premium,
+.form-select.input-premium,
+.quote-field,
+.surface-panel,
+.surface-panel-soft {
+  border-radius: 8px;
+}
+
+.navbar-premium {
+  background: rgba(5, 9, 20, 0.86);
 }
 
 @media (max-width: 991.98px) {
