@@ -33,10 +33,10 @@ export default function PaymentPage() {
           <div>
             <span className="eyebrow mb-2">
               <i className="bi bi-lock"></i>
-              Secure checkout
+              Guest checkout
             </span>
             <h1 className="display-5 mb-2">Fund your transfer</h1>
-            <p className="mb-0">Choose how to pay. Your exchange rate and recipient amount stay locked during checkout.</p>
+            <p className="mb-0">Choose how to pay. No account sign-in is needed for this demo flow.</p>
           </div>
           <Link href="/" className="btn btn-premium btn-premium-secondary">
             <i className="bi bi-arrow-left"></i>
@@ -130,7 +130,7 @@ export default function PaymentPage() {
               )}
 
               <button className="btn btn-premium btn-premium-primary w-100 py-3 mt-4" onClick={() => router.push('/success')}>
-                Pay {gbpFormatter.format(total)} securely
+                Send transfer
                 <i className="bi bi-lock-fill"></i>
               </button>
             </div>

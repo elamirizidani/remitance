@@ -31,7 +31,8 @@ export default function Home() {
   const { setTransferData } = useTransfer();
   const [sendAmt, setSendAmt] = useState('250');
   const [rate, setRate] = useState(1634.5);
-  const [recipientIndex, setRecipientIndex] = useState(0);
+  const [recipientName, setRecipientName] = useState(recipients[0].name);
+  const [recipientPhone, setRecipientPhone] = useState(recipients[0].phone);
   const [methodId, setMethodId] = useState('mtn');
 
   useEffect(() => {
@@ -53,21 +54,32 @@ export default function Home() {
 
   const amount = Number.parseFloat(sendAmt) || 0;
   const receiveAmount = useMemo(() => Math.round(amount * rate), [amount, rate]);
-  const selectedRecipient = recipients[recipientIndex];
   const selectedMethod = deliveryMethods.find((method) => method.id === methodId) || deliveryMethods[0];
   const fee = amount >= 500 ? 0 : 1.5;
+  const canContinue = amount > 0 && recipientName.trim().length > 0 && recipientPhone.trim().length > 0;
 
   const handleAmountChange = (value: string) => {
     const cleanValue = value.replace(/[^0-9.]/g, '');
     setSendAmt(cleanValue);
   };
 
+  const quickFillRecipient = (recipient: (typeof recipients)[number]) => {
+    setRecipientName(recipient.name);
+    setRecipientPhone(recipient.phone);
+    const matchingMethod = deliveryMethods.find((method) => method.label === recipient.method);
+    if (matchingMethod) {
+      setMethodId(matchingMethod.id);
+    }
+  };
+
   const continueToPayment = () => {
+    if (!canContinue) return;
+
     setTransferData({
       sendAmount: amount,
       receiveAmount,
-      recipient: selectedRecipient.name,
-      recipientPhone: selectedRecipient.phone,
+      recipient: recipientName.trim(),
+      recipientPhone: recipientPhone.trim(),
       method: selectedMethod.label,
       paymentMethod: 'card',
       rate,
@@ -85,13 +97,13 @@ export default function Home() {
             <div className="col-lg-6">
               <span className="eyebrow mb-3">
                 <i className="bi bi-shield-check"></i>
-                Regulated UK to Rwanda transfers
+                Open guest transfer
               </span>
               <h1 className="display-3 mb-4">
-                Move money home with clarity before you pay.
+                Send money home to Rwanda instantly.
               </h1>
               <p className="fs-5 mb-4">
-                Compare your GBP/RWF rate, confirm the delivery rail, and see the exact amount your recipient receives before checkout.
+                Compare your GBP/RWF rate, confirm the delivery rail, and see the exact amount your recipient receives. No sign-in is required to try the flow.
               </p>
 
               <div className="metric-grid mb-4">
@@ -107,8 +119,8 @@ export default function Home() {
                 </div>
                 <div className="metric-tile">
                   <div className="text-subtle small mb-2">Security</div>
-                  <div className="h5 mb-1">FCA aligned</div>
-                  <div className="small text-cyan">KYC protected</div>
+                  <div className="h5 mb-1">Guest mode</div>
+                  <div className="small text-cyan">No sign-in required</div>
                 </div>
               </div>
 
@@ -184,25 +196,44 @@ export default function Home() {
                   ))}
                 </div>
 
-                <div className="row g-3 mb-4">
-                  <div className="col-md-7">
-                    <label htmlFor="recipient" className="form-label">Recipient</label>
-                    <select
-                      id="recipient"
-                      className="form-select input-premium"
-                      value={recipientIndex}
-                      onChange={(event) => setRecipientIndex(Number(event.target.value))}
-                    >
-                      {recipients.map((recipient, index) => (
-                        <option key={recipient.phone} value={index}>
-                          {recipient.name}
-                        </option>
-                      ))}
-                    </select>
+                <div className="row g-3 mb-3">
+                  <div className="col-md-6">
+                    <label htmlFor="recipientName" className="form-label">Recipient name</label>
+                    <input
+                      id="recipientName"
+                      className="form-control input-premium"
+                      value={recipientName}
+                      onChange={(event) => setRecipientName(event.target.value)}
+                      placeholder="Type any recipient name"
+                    />
                   </div>
-                  <div className="col-md-5">
-                    <div className="form-label">Phone</div>
-                    <div className="input-premium d-flex align-items-center">{selectedRecipient.phone}</div>
+                  <div className="col-md-6">
+                    <label htmlFor="recipientPhone" className="form-label">Recipient phone</label>
+                    <input
+                      id="recipientPhone"
+                      className="form-control input-premium"
+                      value={recipientPhone}
+                      onChange={(event) => setRecipientPhone(event.target.value)}
+                      placeholder="+250 7xx xxx xxx"
+                      inputMode="tel"
+                    />
+                  </div>
+                </div>
+
+                <div className="mb-4">
+                  <div className="form-label mb-2">Quick-fill saved recipients</div>
+                  <div className="d-flex flex-wrap gap-2">
+                    {recipients.map((recipient) => (
+                      <button
+                        key={recipient.phone}
+                        type="button"
+                        className="btn btn-premium btn-premium-secondary py-2 px-3"
+                        onClick={() => quickFillRecipient(recipient)}
+                      >
+                        <i className="bi bi-person-check"></i>
+                        {recipient.name}
+                      </button>
+                    ))}
                   </div>
                 </div>
 
@@ -225,7 +256,7 @@ export default function Home() {
                   type="button"
                   className="btn btn-premium btn-premium-primary w-100 py-3"
                   onClick={continueToPayment}
-                  disabled={amount <= 0}
+                  disabled={!canContinue}
                 >
                   Continue to secure payment
                   <i className="bi bi-arrow-right"></i>
