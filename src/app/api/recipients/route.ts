@@ -14,7 +14,7 @@ const BodySchema = z.object({
   bankAccount: z.string().optional(),
 });
 
-export async function GET(_request: NextRequest): Promise<Response> {
+export async function GET(): Promise<Response> {
   const supabase = await createSupabaseServerClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return Response.json({ error: 'Unauthorized' } satisfies ApiError, { status: 401 });

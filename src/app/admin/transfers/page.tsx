@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
 
 const gbpFmt = new Intl.NumberFormat('en-GB', { style: 'currency', currency: 'GBP' });
@@ -206,7 +206,6 @@ function Row({ label, value, mono = false }: { label: string; value: string; mon
 }
 
 function TransfersContent() {
-  const router = useRouter();
   const sp = useSearchParams();
   const [transfers, setTransfers] = useState<Transfer[]>([]);
   const [total, setTotal]   = useState(0);

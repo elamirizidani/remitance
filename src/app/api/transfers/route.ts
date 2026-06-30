@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server';
 import { z } from 'zod';
 import { v4 as uuidv4 } from 'uuid';
 import { prisma } from '@/lib/prisma';
-import { stripe } from '@/lib/stripe';
+import { getStripe } from '@/lib/stripe';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { logAuditEvent } from '@/lib/audit';
 import type { CreateTransferResponse, ApiError } from '@/lib/types';
@@ -43,6 +43,20 @@ async function getLiveRate(currency: 'GBP' | 'EUR'): Promise<number> {
 
 function calculateFee(sendAmount: number): number {
   return sendAmount >= 500 ? 0 : 1.55;
+}
+
+function getAppUrl(request: NextRequest): string {
+  const configuredUrl = process.env.NEXT_PUBLIC_APP_URL;
+  if (configuredUrl) return configuredUrl.replace(/\/$/, '');
+
+  const origin = request.nextUrl.origin;
+  if (origin && origin !== 'null') return origin;
+
+  const host = request.headers.get('x-forwarded-host') ?? request.headers.get('host');
+  const protocol = request.headers.get('x-forwarded-proto') ?? 'https';
+  if (host) return `${protocol}://${host}`;
+
+  throw new Error('Missing NEXT_PUBLIC_APP_URL environment variable');
 }
 
 const BodySchema = z.object({
@@ -122,6 +136,9 @@ export async function POST(request: NextRequest): Promise<Response> {
   let checkoutUrl: string;
 
   try {
+    const stripe = getStripe();
+    const appUrl = getAppUrl(request);
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const result = await prisma.$transaction(async (tx: any) => {
       // Create the Transfer record
@@ -180,8 +197,8 @@ export async function POST(request: NextRequest): Promise<Response> {
             deliveryMethod: body.deliveryMethod,
             recipientName: body.recipientName,
           },
-          success_url: `${process.env.NEXT_PUBLIC_APP_URL}/success?transferId=${transfer.id}`,
-          cancel_url:  `${process.env.NEXT_PUBLIC_APP_URL}/?cancelled=true`,
+          success_url: `${appUrl}/success?transferId=${transfer.id}`,
+          cancel_url: `${appUrl}/?cancelled=true`,
         },
         {
           // Stripe idempotency key prevents duplicate sessions on retry

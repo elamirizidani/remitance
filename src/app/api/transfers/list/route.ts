@@ -1,11 +1,10 @@
-import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import type { ApiError } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET(_request: NextRequest): Promise<Response> {
+export async function GET(): Promise<Response> {
   const supabase = await createSupabaseServerClient();
   const { data: { user } } = await supabase.auth.getUser();
 

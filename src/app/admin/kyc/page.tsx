@@ -9,6 +9,12 @@ type User = {
 
 type ActionState = { id: string; verb: 'VERIFIED' | 'REJECTED' } | null;
 
+async function fetchSubmittedKycUsers(): Promise<User[]> {
+  const response = await fetch('/api/admin/users?kyc=SUBMITTED&page=1');
+  const data = await response.json();
+  return data.users ?? [];
+}
+
 export default function AdminKyc() {
   const [users, setUsers]   = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
@@ -17,27 +23,46 @@ export default function AdminKyc() {
   const [saving, setSaving] = useState(false);
   const [err, setErr]       = useState('');
 
-  const load = () => {
+  const load = async () => {
     setLoading(true);
-    fetch('/api/admin/users?kyc=SUBMITTED&page=1')
-      .then(r => r.json())
-      .then(d => setUsers(d.users ?? []))
-      .finally(() => setLoading(false));
+    try {
+      setUsers(await fetchSubmittedKycUsers());
+    } finally {
+      setLoading(false);
+    }
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    let cancelled = false;
+
+    fetchSubmittedKycUsers()
+      .then(nextUsers => {
+        if (!cancelled) setUsers(nextUsers);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const confirm = async () => {
     if (!action) return;
     setSaving(true); setErr('');
-    const res = await fetch(`/api/admin/users/${action.id}/kyc`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status: action.verb, note }),
-    });
-    if (!res.ok) { const d = await res.json(); setErr(d.error ?? 'Failed'); setSaving(false); return; }
-    setAction(null); setNote('');
-    load();
+    try {
+      const res = await fetch(`/api/admin/users/${action.id}/kyc`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: action.verb, note }),
+      });
+      if (!res.ok) { const d = await res.json(); setErr(d.error ?? 'Failed'); return; }
+      setAction(null); setNote('');
+      await load();
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (

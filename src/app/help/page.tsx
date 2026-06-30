@@ -84,7 +84,7 @@ export default function Help() {
                 </div>
                 <div>
                   <div style={{ fontWeight: 800 }}>Contact Us</div>
-                  <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>We're here to help</div>
+                  <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>We&apos;re here to help</div>
                 </div>
               </div>
               <div className="summary-box">

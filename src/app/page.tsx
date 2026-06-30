@@ -320,7 +320,7 @@ export default function Home() {
               Built for the way you send
             </h2>
             <p style={{ fontSize: '1.05rem', color: 'var(--text-muted)', maxWidth: 560, margin: '0 auto' }}>
-              We've reimagined remittance by removing the friction, the hidden fees, and the long waits.
+              We&apos;ve reimagined remittance by removing the friction, the hidden fees, and the long waits.
             </p>
           </div>
           <div className="bento-grid">

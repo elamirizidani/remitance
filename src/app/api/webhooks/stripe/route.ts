@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { stripe } from '@/lib/stripe';
+import { getStripe, getStripeWebhookSecret } from '@/lib/stripe';
 import { prisma } from '@/lib/prisma';
 import { logAuditEvent } from '@/lib/audit';
 import { initiateDeposit, DELIVERY_METHOD_TO_CORRESPONDENT } from '@/lib/pawapay';
@@ -18,10 +18,11 @@ export async function POST(request: NextRequest): Promise<Response> {
 
   let event: Stripe.Event;
   try {
+    const stripe = getStripe();
     event = stripe.webhooks.constructEvent(
       rawBody,
       signature,
-      process.env.STRIPE_WEBHOOK_SECRET!
+      getStripeWebhookSecret()
     );
   } catch (err) {
     console.error('[Stripe webhook] signature verification failed:', err);
