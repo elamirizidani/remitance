@@ -6,53 +6,68 @@ const faqs = [
   {
     id: 'delivery',
     q: 'How long does delivery take?',
-    a: 'Mobile money usually arrives in minutes. Bank deposits can take the same or next business day.',
+    a: 'Mobile money (MTN MoMo or Airtel) usually arrives in under 2 minutes. Bank deposits can take the same or next business day.',
   },
   {
     id: 'fees',
-    q: 'Where do I see fees?',
-    a: 'The send form shows the fee, total to pay, exchange rate, and recipient amount before checkout.',
+    q: 'What fees will I pay?',
+    a: 'We charge a flat fee of £1.55 per transfer. For transfers over £500 the fee is waived entirely. All fees are shown upfront before you pay.',
+  },
+  {
+    id: 'rates',
+    q: 'How is the exchange rate calculated?',
+    a: 'We use the live mid-market rate updated every 60 seconds with no markup. What you see is what you get.',
   },
   {
     id: 'edit',
-    q: 'Can I use a new recipient?',
-    a: 'Yes. Type any recipient name and phone number on the Send page.',
+    q: 'Can I cancel or edit a transfer?',
+    a: 'Transfers are processed instantly. Once sent, they cannot be cancelled. If there is an error, contact support immediately.',
   },
 ];
 
 export default function Help() {
-  const [openFaq, setOpenFaq] = useState('delivery');
+  const [openId, setOpenId] = useState('delivery');
 
   return (
     <section className="page-section">
       <div className="container">
         <div className="page-heading">
           <div>
-            <span className="eyebrow mb-2">Help</span>
-            <h1 className="display-5 mb-2">Support</h1>
+            <span className="eyebrow mb-2 d-block">Help Center</span>
+            <h1 style={{ fontSize: 'clamp(28px, 4vw, 44px)', fontWeight: 900, letterSpacing: '-1.5px' }}>Support</h1>
           </div>
         </div>
 
         <div className="row g-4">
           <div className="col-lg-8">
             <div className="surface-panel overflow-hidden">
-              {faqs.map((faq) => {
-                const isOpen = openFaq === faq.id;
+              {faqs.map((faq, i) => {
+                const isOpen = openId === faq.id;
                 return (
-                  <div className="border-bottom border-white border-opacity-10" key={faq.id}>
+                  <div
+                    key={faq.id}
+                    style={{ borderBottom: i < faqs.length - 1 ? '1px solid var(--border)' : 'none' }}
+                  >
                     <button
                       type="button"
-                      className="w-100 bg-transparent border-0 text-start p-4 d-flex justify-content-between align-items-center gap-3"
-                      onClick={() => setOpenFaq(isOpen ? '' : faq.id)}
+                      onClick={() => setOpenId(isOpen ? '' : faq.id)}
+                      style={{
+                        width: '100%', background: 'transparent', border: 'none',
+                        textAlign: 'left', padding: '20px 24px',
+                        display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12,
+                        cursor: 'pointer',
+                      }}
                       aria-expanded={isOpen}
-                      aria-controls={`${faq.id}-panel`}
                     >
-                      <span className="fw-bold text-white">{faq.q}</span>
-                      <i className={`bi ${isOpen ? 'bi-dash-lg' : 'bi-plus-lg'} text-cyan`}></i>
+                      <span style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--text-main)' }}>{faq.q}</span>
+                      <i
+                        className={`bi ${isOpen ? 'bi-dash-lg' : 'bi-plus-lg'}`}
+                        style={{ color: 'var(--brand-primary)', flexShrink: 0, fontSize: '1rem' }}
+                      ></i>
                     </button>
                     {isOpen && (
-                      <div id={`${faq.id}-panel`} className="px-4 pb-4">
-                        <p className="mb-0">{faq.a}</p>
+                      <div style={{ padding: '0 24px 20px', color: 'var(--text-muted)', fontSize: '0.95rem', lineHeight: 1.6 }}>
+                        {faq.a}
                       </div>
                     )}
                   </div>
@@ -63,20 +78,26 @@ export default function Help() {
 
           <div className="col-lg-4">
             <div className="surface-panel p-4">
-              <h2 className="h5 mb-3">Contact</h2>
-              <div className="d-grid gap-2 small">
-                <div className="d-flex justify-content-between gap-3">
-                  <span className="text-subtle">Chat</span>
-                  <span className="fw-bold text-white">24/7</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+                <div className="icon-box">
+                  <i className="bi bi-headset"></i>
                 </div>
-                <div className="d-flex justify-content-between gap-3">
-                  <span className="text-subtle">Email</span>
-                  <span className="fw-bold text-white text-end">support@fastafasta.com</span>
+                <div>
+                  <div style={{ fontWeight: 800 }}>Contact Us</div>
+                  <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>We're here to help</div>
                 </div>
-                <div className="d-flex justify-content-between gap-3">
-                  <span className="text-subtle">Phone</span>
-                  <span className="fw-bold text-white">+44 20 8888 9999</span>
-                </div>
+              </div>
+              <div className="summary-box">
+                {[
+                  { l: 'Live Chat', v: '24/7 Available' },
+                  { l: 'Email', v: 'support@fastafasta.com' },
+                  { l: 'Phone', v: '+44 20 8888 9999' },
+                ].map(r => (
+                  <div key={r.l} className="sum-row" style={{ marginBottom: 14 }}>
+                    <span>{r.l}</span>
+                    <span style={{ fontWeight: 700, color: 'var(--text-main)', textAlign: 'right', fontSize: '0.85rem' }}>{r.v}</span>
+                  </div>
+                ))}
               </div>
             </div>
           </div>

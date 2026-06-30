@@ -1,0 +1,149 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── Enums ────────────────────────────────────────────────────────────────────
+
+enum KycStatus {
+  PENDING
+  SUBMITTED
+  VERIFIED
+  REJECTED
+}
+
+enum TransferStatus {
+  PENDING
+  PAYMENT_CAPTURED
+  PAYOUT_INITIATED
+  COMPLETED
+  FAILED
+  MANUAL_REVIEW
+}
+
+enum DeliveryMethod {
+  MTN_MOMO
+  AIRTEL_MONEY
+  BANK_DEPOSIT
+}
+
+enum PayoutStatus {
+  INITIATED
+  ACCEPTED
+  COMPLETED
+  FAILED
+}
+
+// ─── Tables ───────────────────────────────────────────────────────────────────
+
+model User {
+  id           String    @id @default(uuid()) @db.Uuid
+  email        String    @unique
+  fullName     String    @map("full_name")
+  kycStatus    KycStatus @default(PENDING) @map("kyc_status")
+  kycDocRef    String?   @map("kyc_doc_ref")
+  country      String    @default("GB") // "GB" | "BE"
+  createdAt    DateTime  @default(now()) @map("created_at")
+
+  transfers    Transfer[]
+  recipients   Recipient[]
+
+  @@map("users")
+}
+
+model Recipient {
+  id             String         @id @default(uuid()) @db.Uuid
+  userId         String         @map("user_id") @db.Uuid
+  fullName       String         @map("full_name")
+  phone          String         // E.164 e.g. +250788123456
+  deliveryMethod DeliveryMethod @map("delivery_method")
+  bankAccount    String?        @map("bank_account")
+  createdAt      DateTime       @default(now()) @map("created_at")
+
+  user           User           @relation(fields: [userId], references: [id])
+  transfers      Transfer[]
+
+  @@index([userId])
+  @@map("recipients")
+}
+
+model Transfer {
+  id               String         @id @default(uuid()) @db.Uuid
+  userId           String         @map("user_id") @db.Uuid
+  recipientId      String?        @map("recipient_id") @db.Uuid
+  // Amounts stored as Decimal — never Float for money
+  sendAmount       Decimal        @map("send_amount")        @db.Decimal(12, 2)
+  sendCurrency     String         @default("GBP")            @map("send_currency")
+  receiveAmount    Decimal        @map("receive_amount")     @db.Decimal(16, 2)
+  receiveCurrency  String         @default("RWF")            @map("receive_currency")
+  exchangeRate     Decimal        @map("exchange_rate")      @db.Decimal(10, 4)
+  fee              Decimal        @db.Decimal(8, 2)
+  recipientName    String         @map("recipient_name")
+  status           TransferStatus @default(PENDING)
+  // Idempotency key generated at creation, reused for Stripe + Pawapay
+  idempotencyKey   String         @unique @map("idempotency_key")
+  createdAt        DateTime       @default(now()) @map("created_at")
+  updatedAt        DateTime       @updatedAt      @map("updated_at")
+
+  user             User           @relation(fields: [userId], references: [id])
+  recipient        Recipient?     @relation(fields: [recipientId], references: [id])
+  stripePayment    StripePayment?
+  payout           Payout?
+  logs             TransactionLog[]
+
+  @@index([userId])
+  @@index([status])
+  @@map("transfers")
+}
+
+model StripePayment {
+  id                   String   @id @default(uuid()) @db.Uuid
+  transferId           String   @unique @map("transfer_id") @db.Uuid
+  stripeSessionId      String   @unique @map("stripe_session_id")
+  stripePaymentIntent  String?  @map("stripe_payment_intent")
+  amountCharged        Decimal  @map("amount_charged") @db.Decimal(12, 2)
+  currency             String
+  status               String   @default("created")
+  createdAt            DateTime @default(now()) @map("created_at")
+
+  transfer             Transfer @relation(fields: [transferId], references: [id])
+
+  @@map("stripe_payments")
+}
+
+model Payout {
+  id               String       @id @default(uuid()) @db.Uuid
+  transferId       String       @unique @map("transfer_id") @db.Uuid
+  // pawapayDepositId is also our idempotency key sent to Pawapay
+  pawapayDepositId String       @unique @map("pawapay_deposit_id")
+  recipientPhone   String       @map("recipient_phone")
+  amount           Decimal      @db.Decimal(16, 2)
+  currency         String       @default("RWF")
+  status           PayoutStatus @default(INITIATED)
+  failureReason    String?      @map("failure_reason")
+  createdAt        DateTime     @default(now()) @map("created_at")
+  updatedAt        DateTime     @updatedAt      @map("updated_at")
+
+  transfer         Transfer     @relation(fields: [transferId], references: [id])
+
+  @@map("payouts")
+}
+
+// Append-only audit log — never updated, only inserted
+model TransactionLog {
+  id          String   @id @default(uuid()) @db.Uuid
+  transferId  String   @map("transfer_id") @db.Uuid
+  event       String   // e.g. "STATUS_CHANGED", "WEBHOOK_RECEIVED", "PAYOUT_INITIATED"
+  fromStatus  String?  @map("from_status")
+  toStatus    String?  @map("to_status")
+  metadata    Json     @default("{}")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  transfer    Transfer @relation(fields: [transferId], references: [id])
+
+  @@index([transferId])
+  @@map("transaction_logs")
+}

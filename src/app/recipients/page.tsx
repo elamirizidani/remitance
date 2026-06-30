@@ -1,52 +1,103 @@
 'use client';
 
 import Link from 'next/link';
-import { FormEvent, useState } from 'react';
+import { FormEvent, useEffect, useState } from 'react';
 
 type Recipient = {
-  id: number;
-  name: string;
+  id: string;
+  fullName: string;
   phone: string;
-  method: string;
+  deliveryMethod: 'MTN_MOMO' | 'AIRTEL_MONEY' | 'BANK_DEPOSIT';
+  bankAccount?: string | null;
 };
 
-const emptyRecipient: Omit<Recipient, 'id'> = {
-  name: '',
-  phone: '+250 ',
-  method: 'MTN MoMo',
+const METHOD_LABEL: Record<string, string> = {
+  MTN_MOMO:     'MTN MoMo',
+  AIRTEL_MONEY: 'Airtel Money',
+  BANK_DEPOSIT: 'Bank deposit',
 };
+
+type DeliveryMethod = 'MTN_MOMO' | 'AIRTEL_MONEY' | 'BANK_DEPOSIT';
+type FormState = { fullName: string; phone: string; deliveryMethod: DeliveryMethod; bankAccount: string };
+const emptyForm: FormState = { fullName: '', phone: '+250', deliveryMethod: 'MTN_MOMO', bankAccount: '' };
 
 export default function Recipients() {
-  const [recipients, setRecipients] = useState<Recipient[]>([
-    { id: 1, name: 'Jean Damascene', phone: '+250 788 123 456', method: 'MTN MoMo' },
-    { id: 2, name: 'Alice Kamikazi', phone: '+250 722 987 654', method: 'Bank deposit' },
-    { id: 3, name: 'Robert Mugisha', phone: '+250 733 111 222', method: 'Airtel Money' },
-  ]);
-  const [editing, setEditing] = useState<Recipient | null>(null);
-  const [formData, setFormData] = useState(emptyRecipient);
-  const [modalOpen, setModalOpen] = useState(false);
+  const [recipients, setRecipients] = useState<Recipient[]>([]);
+  const [loading, setLoading]       = useState(true);
+  const [error, setError]           = useState('');
+  const [saving, setSaving]         = useState(false);
+  const [formError, setFormError]   = useState('');
+  const [editing, setEditing]       = useState<Recipient | null>(null);
+  const [form, setForm]             = useState<FormState>(emptyForm);
+  const [open, setOpen]             = useState(false);
+
+  useEffect(() => {
+    fetch('/api/recipients')
+      .then(r => {
+        if (!r.ok) throw new Error(r.status === 401 ? 'auth' : 'error');
+        return r.json();
+      })
+      .then(setRecipients)
+      .catch(e => setError(e.message === 'auth' ? 'unauthenticated' : 'failed'))
+      .finally(() => setLoading(false));
+  }, []);
 
   const openAdd = () => {
     setEditing(null);
-    setFormData(emptyRecipient);
-    setModalOpen(true);
+    setForm(emptyForm);
+    setFormError('');
+    setOpen(true);
   };
 
-  const openEdit = (recipient: Recipient) => {
-    setEditing(recipient);
-    setFormData({ name: recipient.name, phone: recipient.phone, method: recipient.method });
-    setModalOpen(true);
+  const openEdit = (r: Recipient) => {
+    setEditing(r);
+    setForm({ fullName: r.fullName, phone: r.phone, deliveryMethod: r.deliveryMethod as DeliveryMethod, bankAccount: r.bankAccount ?? '' });
+    setFormError('');
+    setOpen(true);
   };
 
-  const saveRecipient = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (editing) {
-      setRecipients((current) => current.map((recipient) => recipient.id === editing.id ? { ...recipient, ...formData } : recipient));
-    } else {
-      const nextId = recipients.length > 0 ? Math.max(...recipients.map((recipient) => recipient.id)) + 1 : 1;
-      setRecipients((current) => [...current, { id: nextId, ...formData }]);
+  const save = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setSaving(true);
+    setFormError('');
+
+    const body = {
+      fullName: form.fullName,
+      phone: form.phone,
+      deliveryMethod: form.deliveryMethod,
+      ...(form.bankAccount ? { bankAccount: form.bankAccount } : {}),
+    };
+
+    const url = editing ? `/api/recipients/${editing.id}` : '/api/recipients';
+    const method = editing ? 'PUT' : 'POST';
+
+    const res = await fetch(url, {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+
+    if (!res.ok) {
+      const data = await res.json();
+      setFormError(data.error ?? 'Failed to save recipient');
+      setSaving(false);
+      return;
     }
-    setModalOpen(false);
+
+    const saved: Recipient = await res.json();
+    if (editing) {
+      setRecipients(cur => cur.map(r => r.id === editing.id ? saved : r));
+    } else {
+      setRecipients(cur => [saved, ...cur]);
+    }
+    setOpen(false);
+    setSaving(false);
+  };
+
+  const remove = async (id: string) => {
+    if (!window.confirm('Remove this recipient?')) return;
+    await fetch(`/api/recipients/${id}`, { method: 'DELETE' });
+    setRecipients(cur => cur.filter(r => r.id !== id));
   };
 
   return (
@@ -54,73 +105,185 @@ export default function Recipients() {
       <div className="container">
         <div className="page-heading">
           <div>
-            <span className="eyebrow mb-2">Recipients</span>
-            <h1 className="display-5 mb-2">Saved people</h1>
+            <span className="eyebrow mb-2 d-block">Recipients</span>
+            <h1 style={{ fontSize: 'clamp(28px, 4vw, 44px)', fontWeight: 900, letterSpacing: '-1.5px' }}>Saved People</h1>
           </div>
-          <button className="btn btn-premium btn-premium-primary" onClick={openAdd}>Add recipient</button>
+          <button className="btn btn-premium btn-premium-primary" onClick={openAdd}>
+            <i className="bi bi-plus-lg"></i> Add Recipient
+          </button>
         </div>
 
         <div className="surface-panel overflow-hidden">
-          <div className="table-responsive">
-            <table className="table table-hover align-middle mb-0 table-premium">
-              <thead>
-                <tr>
-                  <th className="ps-4 py-3">Name</th>
-                  <th className="py-3">Phone</th>
-                  <th className="py-3">Method</th>
-                  <th className="py-3 text-end pe-4">Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {recipients.map((recipient) => (
-                  <tr key={recipient.id}>
-                    <td className="ps-4 py-4 fw-bold text-white">{recipient.name}</td>
-                    <td className="py-4 text-subtle">{recipient.phone}</td>
-                    <td className="py-4 text-subtle">{recipient.method}</td>
-                    <td className="py-4 text-end pe-4">
-                      <div className="d-inline-flex gap-2">
-                        <Link href="/" className="btn btn-premium btn-premium-primary py-2 px-3">Send</Link>
-                        <button className="btn btn-premium btn-premium-secondary py-2 px-3" onClick={() => openEdit(recipient)}>Edit</button>
-                      </div>
-                    </td>
+          {loading && (
+            <div style={{ padding: '48px 24px', textAlign: 'center', color: 'var(--text-muted)' }}>
+              Loading recipients…
+            </div>
+          )}
+
+          {error === 'unauthenticated' && (
+            <div style={{ padding: '48px 24px', textAlign: 'center' }}>
+              <p style={{ color: 'var(--text-muted)', marginBottom: 16 }}>Log in to manage your recipients.</p>
+              <Link href="/login" className="btn btn-premium btn-premium-primary">Log in</Link>
+            </div>
+          )}
+
+          {error === 'failed' && (
+            <div style={{ padding: '48px 24px', textAlign: 'center', color: '#DC2626' }}>
+              Could not load recipients. Please refresh the page.
+            </div>
+          )}
+
+          {!loading && !error && recipients.length === 0 && (
+            <div style={{ padding: '64px 24px', textAlign: 'center' }}>
+              <div style={{ fontSize: '2.5rem', marginBottom: 16 }}>👥</div>
+              <p style={{ color: 'var(--text-muted)', marginBottom: 20 }}>
+                Save your recipients here to send money faster next time.
+              </p>
+              <button className="btn btn-premium btn-premium-primary" onClick={openAdd}>
+                <i className="bi bi-plus-lg"></i> Add Your First Recipient
+              </button>
+            </div>
+          )}
+
+          {!loading && !error && recipients.length > 0 && (
+            <div className="table-responsive">
+              <table className="table-premium w-100">
+                <thead>
+                  <tr>
+                    <th style={{ paddingLeft: 24 }}>Name</th>
+                    <th>Phone</th>
+                    <th>Method</th>
+                    <th style={{ textAlign: 'right', paddingRight: 24 }}>Action</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {recipients.map(r => (
+                    <tr key={r.id}>
+                      <td style={{ paddingLeft: 24, fontWeight: 700, color: 'var(--text-main)' }}>{r.fullName}</td>
+                      <td style={{ color: 'var(--text-muted)' }}>{r.phone}</td>
+                      <td style={{ color: 'var(--text-muted)' }}>{METHOD_LABEL[r.deliveryMethod] ?? r.deliveryMethod}</td>
+                      <td style={{ textAlign: 'right', paddingRight: 24 }}>
+                        <div className="d-inline-flex gap-2">
+                          <Link href="/" className="btn btn-premium btn-premium-primary" style={{ padding: '8px 16px', fontSize: '0.85rem' }}>
+                            <i className="bi bi-lightning-charge-fill"></i> Send
+                          </Link>
+                          <button
+                            className="btn btn-premium btn-premium-secondary"
+                            style={{ padding: '8px 16px', fontSize: '0.85rem' }}
+                            onClick={() => openEdit(r)}
+                          >
+                            Edit
+                          </button>
+                          <button
+                            className="btn btn-premium btn-premium-secondary"
+                            style={{ padding: '8px 16px', fontSize: '0.85rem', color: '#DC2626', borderColor: '#DC2626' }}
+                            onClick={() => remove(r.id)}
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
 
-        {modalOpen && (
-          <div className="modal-backdrop-custom" role="dialog" aria-modal="true" aria-labelledby="recipientTitle" onClick={() => setModalOpen(false)}>
-            <form className="modal-panel-custom surface-panel p-4 animate-fade-in" onSubmit={saveRecipient} onClick={(event) => event.stopPropagation()}>
+        {open && (
+          <div className="modal-backdrop-custom" role="dialog" aria-modal="true" onClick={() => setOpen(false)}>
+            <form
+              className="modal-panel-custom surface-panel p-4 animate-fade-in"
+              onSubmit={save}
+              onClick={e => e.stopPropagation()}
+            >
               <div className="d-flex justify-content-between align-items-start gap-3 mb-4">
                 <div>
-                  <span className="eyebrow mb-2">Recipient</span>
-                  <h2 id="recipientTitle" className="h4 mb-0">{editing ? 'Edit recipient' : 'Add recipient'}</h2>
+                  <span className="eyebrow mb-2 d-block">Recipient</span>
+                  <h2 style={{ fontSize: '1.4rem', fontWeight: 900 }}>{editing ? 'Edit Recipient' : 'Add Recipient'}</h2>
                 </div>
-                <button type="button" className="btn btn-premium btn-premium-secondary btn-icon" aria-label="Close recipient form" onClick={() => setModalOpen(false)}>
-                  <i className="bi bi-x-lg"></i>
+                <button
+                  type="button"
+                  onClick={() => setOpen(false)}
+                  style={{
+                    background: 'var(--bg-mid)', border: '1px solid var(--border)',
+                    borderRadius: 'var(--radius-sm)', width: 40, height: 40,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+                  }}
+                  aria-label="Close"
+                >
+                  <i className="bi bi-x-lg" style={{ color: 'var(--text-muted)' }}></i>
                 </button>
               </div>
+
+              {formError && (
+                <div className="status-pill status-danger mb-3" style={{ width: '100%', justifyContent: 'flex-start' }}>
+                  <i className="bi bi-exclamation-circle"></i> {formError}
+                </div>
+              )}
+
               <div className="row g-3">
                 <div className="col-12">
-                  <label htmlFor="recipientName" className="form-label">Name</label>
-                  <input id="recipientName" className="form-control input-premium" value={formData.name} onChange={(event) => setFormData({ ...formData, name: event.target.value })} required />
+                  <span className="form-label">Full Name</span>
+                  <input
+                    className="input-premium"
+                    value={form.fullName}
+                    onChange={e => setForm({ ...form, fullName: e.target.value })}
+                    placeholder="Recipient's full name"
+                    required
+                  />
                 </div>
                 <div className="col-md-6">
-                  <label htmlFor="recipientPhone" className="form-label">Phone</label>
-                  <input id="recipientPhone" className="form-control input-premium" value={formData.phone} onChange={(event) => setFormData({ ...formData, phone: event.target.value })} required />
+                  <span className="form-label">Phone (E.164)</span>
+                  <input
+                    className="input-premium"
+                    value={form.phone}
+                    onChange={e => setForm({ ...form, phone: e.target.value })}
+                    placeholder="+250788xxxxxx"
+                    inputMode="tel"
+                    required
+                  />
                 </div>
                 <div className="col-md-6">
-                  <label htmlFor="payoutMethod" className="form-label">Method</label>
-                  <select id="payoutMethod" className="form-select input-premium" value={formData.method} onChange={(event) => setFormData({ ...formData, method: event.target.value })}>
-                    <option>MTN MoMo</option>
-                    <option>Airtel Money</option>
-                    <option>Bank deposit</option>
+                  <span className="form-label">Delivery Method</span>
+                  <select
+                    className="input-premium"
+                    value={form.deliveryMethod}
+                    onChange={e => setForm({ ...form, deliveryMethod: e.target.value as DeliveryMethod })}
+                  >
+                    <option value="MTN_MOMO">MTN MoMo</option>
+                    <option value="AIRTEL_MONEY">Airtel Money</option>
+                    <option value="BANK_DEPOSIT">Bank deposit</option>
                   </select>
                 </div>
+                {form.deliveryMethod === 'BANK_DEPOSIT' && (
+                  <div className="col-12">
+                    <span className="form-label">Bank Account Number</span>
+                    <input
+                      className="input-premium"
+                      value={form.bankAccount}
+                      onChange={e => setForm({ ...form, bankAccount: e.target.value })}
+                      placeholder="Account number"
+                    />
+                  </div>
+                )}
               </div>
-              <button className="btn btn-premium btn-premium-primary w-100 mt-4" type="submit">Save</button>
+
+              <button
+                type="submit"
+                disabled={saving}
+                style={{
+                  width: '100%', marginTop: 20,
+                  background: saving ? 'var(--border)' : 'var(--brand-accent)',
+                  border: 'none',
+                  color: saving ? 'var(--text-subtle)' : 'white',
+                  borderRadius: '100px', padding: 16,
+                  fontWeight: 800, cursor: saving ? 'default' : 'pointer', fontSize: '1rem',
+                }}
+              >
+                {saving ? 'Saving…' : 'Save Recipient'}
+              </button>
             </form>
           </div>
         )}
