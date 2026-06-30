@@ -1,7 +1,24 @@
 import { requireAdmin } from '@/lib/admin';
 import { prisma } from '@/lib/prisma';
+import type { PayoutStatus, Prisma, TransferStatus } from '@prisma/client';
 
 export const dynamic = 'force-dynamic';
+
+type RecentTransfer = {
+  id: string;
+  recipientName: string;
+  sendAmount: Prisma.Decimal;
+  sendCurrency: string;
+  receiveAmount: Prisma.Decimal;
+  status: TransferStatus;
+  payout: { status: PayoutStatus } | null;
+  createdAt: Date;
+};
+
+type StatusBreakdown = {
+  status: TransferStatus;
+  _count: { id: number };
+};
 
 export async function GET(): Promise<Response> {
   if (!await requireAdmin()) {
@@ -51,7 +68,7 @@ export async function GET(): Promise<Response> {
     pendingKyc,
     totalVolume: Number(volumeResult._sum.sendAmount ?? 0),
     totalRevenue: Number(revenueResult._sum.fee ?? 0),
-    recentTransfers: recentTransfers.map(t => ({
+    recentTransfers: recentTransfers.map((t: RecentTransfer) => ({
       id: t.id,
       recipientName: t.recipientName,
       sendAmount: Number(t.sendAmount),
@@ -61,7 +78,7 @@ export async function GET(): Promise<Response> {
       payoutStatus: t.payout?.status ?? null,
       createdAt: t.createdAt.toISOString(),
     })),
-    statusBreakdown: statusBreakdown.map(s => ({
+    statusBreakdown: statusBreakdown.map((s: StatusBreakdown) => ({
       status: s.status,
       count: s._count.id,
     })),
